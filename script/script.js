@@ -1,78 +1,3 @@
-const questions = [
-  {
-    question: 'Какого цвета бургер?',
-    answers: [
-      {
-        title: 'Стандарт',
-        url: './image/burger.png',
-      },
-      {
-        title: 'Черный',
-        url: './image/burgerBlack.png',
-      },
-    ],
-    type: 'radio',
-  },
-  {
-    question: 'Из какого мяса котлета?',
-    answers: [
-      {
-        title: 'Курица',
-        url: './image/chickenMeat.png',
-      },
-      {
-        title: 'Говядина',
-        url: './image/beefMeat.png',
-      },
-      {
-        title: 'Свинина',
-        url: './image/porkMeat.png',
-      },
-    ],
-    type: 'radio',
-  },
-  {
-    question: 'Дополнительные ингредиенты?',
-    answers: [
-      {
-        title: 'Помидор',
-        url: './image/tomato.png',
-      },
-      {
-        title: 'Огурец',
-        url: './image/cucumber.png',
-      },
-      {
-        title: 'Салат',
-        url: './image/salad.png',
-      },
-      {
-        title: 'Лук',
-        url: './image/onion.png',
-      },
-    ],
-    type: 'checkbox',
-  },
-  {
-    question: 'Добавить соус?',
-    answers: [
-      {
-        title: 'Чесночный',
-        url: './image/sauce1.png',
-      },
-      {
-        title: 'Томатный',
-        url: './image/sauce2.png',
-      },
-      {
-        title: 'Горчичный',
-        url: './image/sauce3.png',
-      },
-    ],
-    type: 'radio',
-  },
-];
-
 const openModalButton = document.querySelector('#btnOpenModal');
 const modal = document.querySelector('#modalBlock');
 const closeModal = document.querySelector('#closeModal');
@@ -80,13 +5,32 @@ const questionTitle = document.querySelector('#question');
 const formAnswers = document.querySelector('#formAnswers');
 const nextButton = document.querySelector('#next');
 const prevButton = document.querySelector('#prev');
+const sendButton = document.querySelector('#send');
 
+let questions = [];
 let page = 0;
+let finalAnswers = [];
+let numberQuestion = null;
 
 closeModal.addEventListener('click', onCloseModalClick);
 openModalButton.addEventListener('click', onOpenModalBtnClick);
 nextButton.addEventListener('click', onNextBtnClick);
 prevButton.addEventListener('click', onPrevBtnClick);
+sendButton.addEventListener('click', onSendBtnClick);
+
+async function getQuestions() {
+  const resolve = await fetch('../questions.json');
+  const data = await resolve.json();
+  return data;
+}
+
+getQuestions()
+  .then(data => {
+    questions = data.questions;
+  })
+  .catch(error => {
+    console.log(error);
+  });
 
 function onOpenModalBtnClick() {
   modal.classList.add('d-block');
@@ -99,27 +43,39 @@ function onCloseModalClick() {
 
 function playTest() {
   formAnswers.innerHTML = '';
+  sendButton.classList.add('d-none');
 
   if (page === 0) {
-    prevButton.style.display = 'none';
+    prevButton.classList.add('d-none');
   }
   if (page > 0) {
-    prevButton.style.display = 'block';
+    prevButton.classList.remove('d-none');
   }
-  if (page < questions.length - 1) {
-    nextButton.style.display = 'block';
+  if (page === questions.length) {
+    nextButton.classList.add('d-none');
+    prevButton.classList.add('d-none');
+    sendButton.classList.remove('d-none');
+    formAnswers.innerHTML = `
+      <div class="form-group">
+      <label for="numberPhone">Enter your number</label>
+      <input type="phone" name="form-control" id="numberPhone" />
+      </div>
+      `;
+    questionTitle.textContent = '';
+    page = 0;
+    return;
   }
-  if (page === questions.length - 1) {
-    nextButton.style.display = 'none';
+  if (page < questions.length) {
+    nextButton.classList.remove('d-none');
   }
 
   const renderAnswers = (answersArr, type) => {
     answersArr.forEach(answer => {
       const answerItem = document.createElement('div');
-      answerItem.classList.add('answers-item', 'd-flex', 'flex-column');
+      answerItem.classList.add('answers-item', 'd-flex', 'justify-content-center');
 
       answerItem.innerHTML = `
-      <input type="${type}" id="${answer.title}" name="answer" class="d-none" />
+      <input type="${type}" id="${answer.title}" name="answer" class="d-none" value="${answer.title}" />
          <label for="${answer.title}" class="d-flex flex-column justify-content-between">
              <img class="answerImg" src="${answer.url}" alt="burger" />
              <span>${answer.title}</span>
@@ -131,6 +87,7 @@ function playTest() {
   };
 
   const renderQuestions = index => {
+    numberQuestion = index;
     questionTitle.textContent = `${questions[index].question}`;
 
     renderAnswers(questions[index].answers, questions[index].type);
@@ -139,7 +96,24 @@ function playTest() {
   renderQuestions(page);
 }
 
+function checkAnswer() {
+  const obj = {};
+
+  const inputs = [...formAnswers.elements].filter(
+    element => element.checked || element.id === 'numberPhone'
+  );
+  inputs.forEach((input, index) => {
+    if (input.id === 'numberPhone') {
+      obj['Номер телефона'] = input.value;
+    } else {
+      obj[`${index}_${questions[numberQuestion].question}`] = input.value;
+    }
+  });
+  finalAnswers.push(obj);
+}
+
 function onNextBtnClick() {
+  checkAnswer();
   page += 1;
   playTest();
 }
@@ -147,4 +121,16 @@ function onNextBtnClick() {
 function onPrevBtnClick() {
   page -= 1;
   playTest();
+}
+
+function onSendBtnClick() {
+  checkAnswer();
+  formAnswers.textContent = 'Спасибо за пройденный тест';
+  sendButton.classList.add('d-none');
+  setTimeout(() => {
+    modal.classList.remove('d-block');
+  }, 2000);
+
+  console.log(finalAnswers);
+  finalAnswers = [];
 }
