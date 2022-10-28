@@ -18,13 +18,13 @@ nextButton.addEventListener('click', onNextBtnClick);
 prevButton.addEventListener('click', onPrevBtnClick);
 sendButton.addEventListener('click', onSendBtnClick);
 
-async function getQuestions() {
-  const resolve = await fetch('../questions.json');
+async function getQuestions(url) {
+  const resolve = await fetch(url);
   const data = await resolve.json();
   return data;
 }
 
-getQuestions()
+getQuestions('./questions.json')
   .then(data => {
     questions = data.questions;
   })
