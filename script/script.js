@@ -18,18 +18,27 @@ nextButton.addEventListener('click', onNextBtnClick);
 prevButton.addEventListener('click', onPrevBtnClick);
 sendButton.addEventListener('click', onSendBtnClick);
 
-async function getQuestions(url) {
-  const resolve = await fetch(url);
-  const data = await resolve.json();
-  return data;
-}
+const firebaseConfig = {
+  apiKey: 'AIzaSyBmE-HdhO4aAbEcIEcMyGW2xmWXHSHJEyw',
+  authDomain: 'testburger-2b71b.firebaseapp.com',
+  databaseURL: 'https://testburger-2b71b-default-rtdb.firebaseio.com',
+  projectId: 'testburger-2b71b',
+  storageBucket: 'testburger-2b71b.appspot.com',
+  messagingSenderId: '903351671149',
+  appId: '1:903351671149:web:c721481aeb557bc331a264',
+  measurementId: 'G-9KF1VB1C07',
+};
 
-getQuestions('./questions.json')
-  .then(data => {
-    questions = data.questions;
-  })
-  .catch(error => {
-    console.log(error);
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
+
+firebase
+  .database()
+  .ref()
+  .child('questions')
+  .once('value')
+  .then(snap => {
+    questions = snap.val();
   });
 
 function onOpenModalBtnClick() {
@@ -131,6 +140,7 @@ function onSendBtnClick() {
     modal.classList.remove('d-block');
   }, 2000);
 
+  firebase.database().ref().child('contacts').push(finalAnswers);
   console.log(finalAnswers);
   finalAnswers = [];
 }
